@@ -89,7 +89,7 @@ class SongDetail(APIView):
     def delete(self, request: Request, pk: int, format=None) -> Response:
         """delete an instance of 'Song'
 
-        Keyword arguments:
+        Kwargs:
         request -- a rest framework request object
 
         Return: a rest framework response object with no content status
