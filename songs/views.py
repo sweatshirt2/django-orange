@@ -5,13 +5,14 @@ from rest_framework import status
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.parsers import JSONParser
+from rest_framework.decorators import api_view
 
 from .models import Song
 from .serializers import SongSerializer
 
 
-@csrf_exempt
-def song_list(request: Response) -> JsonResponse:
+@api_view(["GET", "POST"])
+def song_list(request: Request, format=None) -> Response:
     """list all songs or create a new one
 
     Kwargs:
@@ -23,21 +24,20 @@ def song_list(request: Response) -> JsonResponse:
         songs = Song.objects.all()
         serializer = SongSerializer(songs, many=True)
 
-        return JsonResponse(serializer.data, safe=False, status=status.HTTP_200_OK)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     if request.method == "POST":
-        data = JSONParser().parse(request)
         # ? is the data argument being passed as data verbose ???
-        serializer = SongSerializer(data=data)
+        serializer = SongSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
 
-            return JsonResponse(serializer.data, status=status.HTTP_201_CREATED)
-        return JsonResponse(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-@csrf_exempt
-def song_detail(request: Response, pk: int) -> HttpResponse | JsonResponse:
+@api_view(["GET", "PUT", "DELETE"])
+def song_detail(request: Request, pk: int, format=None) -> Response:
     """actions that require the id of the song (i.e: find-one, update, delete)
 
     Kwargs:
@@ -58,18 +58,17 @@ def song_detail(request: Response, pk: int) -> HttpResponse | JsonResponse:
     if request.method == "GET":
         # ? why is data not given to the serializer here ???
         serializer = SongSerializer(song)
-        return JsonResponse(serializer.data)
+        return Response(serializer.data)
 
     if request.method == "PUT":
-        data = JSONParser().parse(request)
         # ? why is data given to the serializer here ???
-        serializer = SongSerializer(song, data=data)
+        serializer = SongSerializer(song, data=request.data)
 
         if serializer.is_valid():
             serializer.save()
-            return JsonResponse(serializer.data)
-        return JsonResponse(serializer.errors, 400)
+            return Response(serializer.data)
+        return Response(serializer.errors, 400)
 
     if request.method == "DELETE":
         song.delete()
-        return HttpResponse(status=status.HTTP_204_NO_CONTENT)
+        return Response(status=status.HTTP_204_NO_CONTENT)
