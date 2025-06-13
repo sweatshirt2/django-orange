@@ -54,8 +54,22 @@ class UserSerializer(serializers.ModelSerializer):
     a class to serialize the auth 'User' model with song ownership
     """
 
-    songs = serializers.PrimaryKeyRelatedField(queryset=Song.objects.all(), many=True)
+    # songs = serializers.PrimaryKeyRelatedField(queryset=Song.objects.all(), many=True)
+    # song_titles = serializers.SerializerMethodField()
+    # songs = SongSerializer(many=True, read_only=True)
+    songs = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ["id", "username", "songs"]
+        fields = [
+            "id",
+            "username",
+            "songs",
+            # "song_titles",
+        ]
+
+    # def get_song_titles(self, obj: User):
+    #     return [song.title for song in obj.songs.all()]
+
+    def get_songs(self, obj: User):
+        return [{"id": song.id, "title": song.title} for song in obj.songs.all()]

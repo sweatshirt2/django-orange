@@ -26,5 +26,3 @@ urlpatterns = [
 
 # suggested by the framework docs
 # urlpatterns += [path("api-auth/", include("rest_framework.urls"))]
-
-# ! Test after changing pk and it's type
