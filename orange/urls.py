@@ -19,6 +19,10 @@ from django.contrib import admin
 from django.urls import path, include
 
 urlpatterns = [
-    path("songs/", include("songs.urls")),
+    path("", include("songs.urls")),
     path("admin/", admin.site.urls),
+    path("api-auth/", include("rest_framework.urls")),
 ]
+
+# suggested by the framework docs
+# urlpatterns += [path("api-auth/", include("rest_framework.urls"))]
