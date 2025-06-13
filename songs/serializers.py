@@ -55,9 +55,12 @@ class UserSerializer(serializers.ModelSerializer):
     """
 
     # songs = serializers.PrimaryKeyRelatedField(queryset=Song.objects.all(), many=True)
-    # song_titles = serializers.SerializerMethodField()
+    song_titles = serializers.SerializerMethodField()
     # songs = SongSerializer(many=True, read_only=True)
-    songs = serializers.SerializerMethodField()
+    # songs = serializers.SerializerMethodField()
+    songs = serializers.HyperlinkedRelatedField(
+        many=True, view_name="song-detail", read_only=True
+    )
 
     class Meta:
         model = User
@@ -65,11 +68,11 @@ class UserSerializer(serializers.ModelSerializer):
             "id",
             "username",
             "songs",
-            # "song_titles",
+            "song_titles",
         ]
 
-    # def get_song_titles(self, obj: User):
-    #     return [song.title for song in obj.songs.all()]
+    def get_song_titles(self, obj: User):
+        return [song.title for song in obj.songs.all()]
 
-    def get_songs(self, obj: User):
-        return [{"id": song.id, "title": song.title} for song in obj.songs.all()]
+    # def get_songs(self, obj: User):
+    #     return [{"id": song.id, "title": song.title} for song in obj.songs.all()]
