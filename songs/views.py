@@ -6,6 +6,7 @@ from rest_framework.reverse import reverse
 from django.contrib.auth.models import User
 from .models import Song
 from .serializers import UserSerializer, SongSerializer
+from .permissions import IsOwnerOrReadOnly
 
 
 @api_view(["GET"])
@@ -34,6 +35,7 @@ class SongViewSet(viewsets.ModelViewSet):
 
     queryset = Song.objects.all()
     serializer_class = SongSerializer
+    permission_classes = [IsOwnerOrReadOnly]
 
     def perform_create(self, serializer: SongSerializer):
         serializer.save(artist=self.request.user)
