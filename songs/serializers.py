@@ -13,6 +13,13 @@ class SongSectionSerializer(serializers.ModelSerializer):
         fields = ["id", "sequence", "content", "type"]
 
     def get_type(self, obj: Section):
+        """a serializer method to serialize the type property to it's user friendly kind
+
+        Kwargs:
+        None
+
+        Return: the type of the section
+        """
         return obj.get_type_display()
 
 
@@ -32,6 +39,13 @@ class SongSerializer(serializers.ModelSerializer):
         fields = ["id", "title", "artist", "genres", "sections"]
 
     def to_representation(self, instance):
+        """makes modification to the serialized value of the model
+
+        Kwargs:
+        None
+
+        Return: the modified representation of the model represented with this serializer
+        """
         representation = super().to_representation(instance)
         sorted_sections = sorted(
             representation["sections"], key=lambda x: x["sequence"]
@@ -41,12 +55,24 @@ class SongSerializer(serializers.ModelSerializer):
         return representation
 
     def create(self, validated_data: Dict):
+        """modifies how the model represented by this serializer is created
+
+        Keyword arguments:
+        validated_data -- the validated data based on the property definition of the model
+
+        Return: the model's instance
+        """
+
+        # extracting the nested values of other related models
         sections_data = validated_data.pop("sections", [])
         genres = validated_data.pop("genres", [])
 
+        # creating the object with the validated data of only self
         song = Song.objects.create(**validated_data)
+        # setting a many to many relation with existing instances of models
         song.genres.set(genres)
 
+        # creating the related instances of a one to many related model
         for section_data in sections_data:
             Section.objects.create(song=song, **section_data)
 
