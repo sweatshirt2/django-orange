@@ -2,39 +2,33 @@ from typing import Dict
 from rest_framework import serializers
 from django.contrib.auth.models import User
 
-from .models import Song
+from .models import Song, Genre, Section, Notification, SectionType
 
 
-# ? Generic serializer
-# class SongSerializer(serializers.Serializer):
-#     id = serializers.IntegerField(read_only=True)
-#     # The below config for required and allow blank is the default
-#     title = serializers.CharField(required=True, allow_blank=False, max_length=100)
+class SongSectionSerializer(serializers.ModelSerializer):
+    type = serializers.ChoiceField(
+        choices=SectionType.choices, default=SectionType.VERSE
+    )
 
-#     def create(self, validated_data: Dict) -> Song:
-#         """create and return new 'Song' instance, with validated data
+    class Meta:
+        model = Section
+        fields = ["id", "sequence", "content", "type"]
 
-#         Kwargs:
-#         validated_data -- dictionary of validated data as an input to create a 'Song' instance
+    # def get_type(self, obj: Section):
+    #     """a serializer method to serialize the type property to it's user friendly kind
 
-#         Return: a 'Song' instance
-#         """
-#         print("validated data", validated_data)
-#         return Song.objects.create(**validated_data)
+    #     Kwargs:
+    #     None
 
-#     def update(self, instance: Song, validated_data: Dict) -> Song:
-#         """update and return a 'Song' instance, with the validated data
+    #     Return: the type of the section
+    #     """
+    #     return obj.get_type_display()
 
-#         Kwargs:
-#         instance -- old instance of 'Song' before update
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation["type"] = instance.get_type_display()
 
-#         Return: the updated 'Song' instance
-#         """
-#         print("instance", instance)
-#         print("validated data", validated_data)
-#         instance.title = validated_data.get("title", instance.title)
-#         instance.save()
-#         return instance
+        return representation
 
 
 class SongSerializer(serializers.ModelSerializer):
@@ -42,11 +36,70 @@ class SongSerializer(serializers.ModelSerializer):
     a class to serialize our 'Song' model
     """
 
+    sections = SongSectionSerializer(many=True)
     artist = serializers.ReadOnlyField(source="artist.username")
+    genres = serializers.SlugRelatedField(
+        queryset=Genre.objects.all(), slug_field="name", many=True
+    )
 
     class Meta:
         model = Song
-        fields = ["id", "title", "artist"]
+        fields = ["id", "title", "artist", "genres", "sections"]
+
+    def to_representation(self, instance):
+        """makes modification to the serialized value of the model
+
+        Kwargs:
+        None
+
+        Return: the modified representation of the model represented with this serializer
+        """
+        representation = super().to_representation(instance)
+        sorted_sections = sorted(
+            representation["sections"], key=lambda x: x["sequence"]
+        )
+
+        representation["sections"] = sorted_sections
+        return representation
+
+    def create(self, validated_data: Dict):
+        """modifies how the model represented by this serializer is created
+
+        Keyword arguments:
+        validated_data -- the validated data based on the property definition of the model
+
+        Return: the model's instance
+        """
+
+        # extracting the nested values of other related models
+        sections_data = validated_data.pop("sections", [])
+        genres = validated_data.pop("genres", [])
+
+        # creating the object with the validated data of only self
+        song = Song.objects.create(**validated_data)
+        # setting a many to many relation with existing instances of models
+        song.genres.set(genres)
+
+        # creating the related instances of a one to many related model
+        for section_data in sections_data:
+            Section.objects.create(song=song, **section_data)
+
+        return song
+
+    def update(self, instance: Song, validated_data: Dict):
+        sections_data = validated_data.pop("sections", [])
+        genres = validated_data.pop("genres", [])
+
+        instance.title = validated_data.get("title", instance.title)
+        instance.genres.set(genres)
+        instance.save()
+
+        instance.sections.all().delete()
+
+        for section_data in sections_data:
+            Section.objects.create(song=instance, **section_data)
+
+        return instance
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -59,7 +112,7 @@ class UserSerializer(serializers.ModelSerializer):
     # songs = SongSerializer(many=True, read_only=True)
     # songs = serializers.SerializerMethodField()
     songs = serializers.HyperlinkedRelatedField(
-        many=True, view_name="song-detail", read_only=True
+        view_name="song-detail", read_only=True, many=True
     )
 
     class Meta:
@@ -76,3 +129,20 @@ class UserSerializer(serializers.ModelSerializer):
 
     # def get_songs(self, obj: User):
     #     return [{"id": song.id, "title": song.title} for song in obj.songs.all()]
+
+
+class GenreSerializer(serializers.ModelSerializer):
+    songs = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Genre
+        fields = ["id", "name", "songs"]
+
+    def get_songs(self, obj: Genre):
+        return [song.title for song in obj.songs.all()]
+
+
+class NotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notification
+        fields = ["id", "content"]
