@@ -2,25 +2,33 @@ from typing import Dict
 from rest_framework import serializers
 from django.contrib.auth.models import User
 
-from .models import Song, Genre, Section, Notification
+from .models import Song, Genre, Section, Notification, SectionType
 
 
 class SongSectionSerializer(serializers.ModelSerializer):
-    type = serializers.SerializerMethodField()
+    type = serializers.ChoiceField(
+        choices=SectionType.choices, default=SectionType.VERSE
+    )
 
     class Meta:
         model = Section
         fields = ["id", "sequence", "content", "type"]
 
-    def get_type(self, obj: Section):
-        """a serializer method to serialize the type property to it's user friendly kind
+    # def get_type(self, obj: Section):
+    #     """a serializer method to serialize the type property to it's user friendly kind
 
-        Kwargs:
-        None
+    #     Kwargs:
+    #     None
 
-        Return: the type of the section
-        """
-        return obj.get_type_display()
+    #     Return: the type of the section
+    #     """
+    #     return obj.get_type_display()
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation["type"] = instance.get_type_display()
+
+        return representation
 
 
 class SongSerializer(serializers.ModelSerializer):
