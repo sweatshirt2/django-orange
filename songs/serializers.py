@@ -2,7 +2,7 @@ from typing import Dict
 from rest_framework import serializers
 from django.contrib.auth.models import User
 
-from .models import Song, Genre, Section
+from .models import Song, Genre, Section, Notification
 
 
 class SongSectionSerializer(serializers.ModelSerializer):
@@ -132,3 +132,9 @@ class GenreSerializer(serializers.ModelSerializer):
 
     def get_songs(self, obj: Genre):
         return [song.title for song in obj.songs.all()]
+
+
+class NotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notification
+        fields = ["id", "content"]

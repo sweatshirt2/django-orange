@@ -35,3 +35,7 @@ class Section(models.Model):
     type = models.CharField(
         max_length=2, choices=SectionType.choices, default=SectionType.VERSE
     )
+
+
+class Notification(models.Model):
+    content = models.TextField()

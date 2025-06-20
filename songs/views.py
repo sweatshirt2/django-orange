@@ -4,8 +4,13 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
 from django.contrib.auth.models import User
-from .models import Song, Genre
-from .serializers import UserSerializer, SongSerializer, GenreSerializer
+from .models import Song, Genre, Notification
+from .serializers import (
+    UserSerializer,
+    SongSerializer,
+    GenreSerializer,
+    NotificationSerializer,
+)
 from .permissions import IsOwnerOrReadOnly
 
 
@@ -54,4 +59,10 @@ class GenreList(generics.ListCreateAPIView):
 class GenreDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
+    format = None
+
+
+class NotificationList(generics.ListAPIView):
+    queryset = Notification.objects.all()
+    serializer_class = NotificationSerializer
     format = None
